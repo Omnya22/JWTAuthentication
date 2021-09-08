@@ -29,5 +29,19 @@ namespace APIJWTAuthentication.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login(LoginModel model)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.LoginAsync(model);
+
+            if (!result.IsAuthenticated)
+                return BadRequest(result.Message);
+
+            return Ok(result);
+        }
     }
 }

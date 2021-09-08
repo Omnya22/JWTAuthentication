@@ -27,12 +27,13 @@ namespace APIJWTAuthentication.Services
             _mapper = mapper;
             _jwt = jwt.Value;
         }
+
         public async Task<AuthModel> RegisterAsync(RegisterModel model)
         {
-            if (await _userManager.FindByEmailAsync(model.Email) != null)
+            if (await _userManager.FindByEmailAsync(model.Email) is not null)
                 return new AuthModel { Message = "Email is already registered!" };
             
-            if (await _userManager.FindByNameAsync(model.Username) != null)
+            if (await _userManager.FindByNameAsync(model.Username) is not null)
                 return new AuthModel { Message = "Username is already registered!" };
 
             var user = _mapper.Map<ApplicationUser>(model);
@@ -61,6 +62,30 @@ namespace APIJWTAuthentication.Services
                 Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken),
                 Username = user.UserName
             };
+        }
+
+
+        public async Task<AuthModel> LoginAsync(LoginModel model)
+        {
+            var authModel = new AuthModel();
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if(user is null || await _userManager.CheckPasswordAsync(user,model.Password))
+            {
+                authModel.Message = "Email or Password is incorrect!";
+                return authModel;
+            }
+            var jwtSecurityToken = await CreateJwtToken(user);
+            var rolesList = await _userManager.GetRolesAsync(user);
+
+            authModel.IsAuthenticated = true;
+            authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+            authModel.Email = user.Email;
+            authModel.Username = user.UserName;
+            authModel.ExpiresOn = jwtSecurityToken.ValidTo;
+            authModel.Roles = rolesList.ToList();
+
+            return authModel;
         }
 
         private async Task<JwtSecurityToken> CreateJwtToken(ApplicationUser user)
