@@ -1,5 +1,8 @@
 using APIJWTAuthentication.Data;
+using APIJWTAuthentication.Helper;
 using APIJWTAuthentication.Models;
+using APIJWTAuthentication.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -7,7 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 namespace APIJWTAuthentication
 {
@@ -30,6 +35,29 @@ namespace APIJWTAuthentication
 
             services.AddDbContext<ApplicationContext>(option =>
                 option.UseSqlServer(Configuration.GetConnectionString("Test")));
+            
+            services.AddScoped<IAuthService, AuthService>();
+
+            services.AddAuthentication(options=>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                .AddJwtBearer(option=> 
+                {
+                    option.RequireHttpsMetadata = false;
+                    option.SaveToken = false;
+                    option.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidIssuer = Configuration["JWT:Issuer"],
+                        ValidAudience = Configuration["JWT:Audience"],
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Key"]))
+                    };
+                });
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -51,6 +79,8 @@ namespace APIJWTAuthentication
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
