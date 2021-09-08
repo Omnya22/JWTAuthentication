@@ -59,7 +59,10 @@ namespace APIJWTAuthentication
                     };
                 });
 
+            services.AddAutoMapper(typeof(Startup));
+
             services.AddControllers();
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "APIJWTAuthentication", Version = "v1" });
