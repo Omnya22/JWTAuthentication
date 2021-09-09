@@ -9,6 +9,8 @@ namespace APIJWTAuthentication.Helper
         public MappingProfile()
         {
             CreateMap<ApplicationUser, RegisterModel>().ReverseMap();
+            CreateMap<ApplicationUser, UserModel>().ReverseMap();
+
         }
     }
 }

@@ -1,10 +1,12 @@
 ﻿using APIJWTAuthentication.Dtos;
 using APIJWTAuthentication.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
 namespace APIJWTAuthentication.Controllers
 {
+    [AllowAnonymous]
     [Route("api/[controller]")]
     [ApiController]
     public class AccountController : ControllerBase
@@ -43,5 +45,6 @@ namespace APIJWTAuthentication.Controllers
 
             return Ok(result);
         }
+
     }
 }

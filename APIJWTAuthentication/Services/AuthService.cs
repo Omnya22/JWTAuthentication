@@ -12,21 +12,25 @@ using System;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 
 namespace APIJWTAuthentication.Services
 {
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IMapper _mapper;
         private readonly JWT _jwt;
 
-        public AuthService(UserManager<ApplicationUser> userManager, IMapper mapper, IOptions<JWT> jwt)
+        public AuthService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IMapper mapper, IOptions<JWT> jwt)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
             _mapper = mapper;
             _jwt = jwt.Value;
         }
+
 
         public async Task<AuthModel> RegisterAsync(RegisterModel model)
         {
@@ -64,7 +68,6 @@ namespace APIJWTAuthentication.Services
             };
         }
 
-
         public async Task<AuthModel> LoginAsync(LoginModel model)
         {
             var authModel = new AuthModel();
@@ -86,6 +89,21 @@ namespace APIJWTAuthentication.Services
             authModel.Roles = rolesList.ToList();
 
             return authModel;
+        }
+
+        public async Task<string> AddRoleAsync(RoleModel model)
+        {
+            var user = await _userManager.FindByIdAsync(model.UserId);
+
+            if (user is null || !await _roleManager.RoleExistsAsync(model.Role))
+                return "Invalid user ID or Role";
+
+            if (await _userManager.IsInRoleAsync(user, model.Role))
+                return "User already assigned to this role";
+
+            var result = await _userManager.AddToRoleAsync(user, model.Role);
+
+            return result.Succeeded ? string.Empty : "Something went wrong";
         }
 
         private async Task<JwtSecurityToken> CreateJwtToken(ApplicationUser user)
@@ -120,5 +138,19 @@ namespace APIJWTAuthentication.Services
             return jwtSecurityToken;
         }
 
+        public async Task<IEnumerable<UserModel>> GetAllUsers()
+        {
+            var users = await _userManager.Users.ToListAsync();
+            var usersFounded = new List<UserModel>();
+            if (users.Any())
+            {
+                foreach (var user in users)
+                {
+                    usersFounded.Add(_mapper.Map<UserModel>(user));
+                }
+                return usersFounded;
+            }
+            return usersFounded;
+        }
     }
 }
